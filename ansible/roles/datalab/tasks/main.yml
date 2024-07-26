@@ -39,6 +39,37 @@
     env_files:
       - /home/{{ ansible_ssh_user }}/datalab/pydatalab/.env
 
+- name: Sync local ssh config vault remote
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/vaults/datalab/.ssh/"
+    dest: /home/{{ ansible_ssh_user }}/datalab-ssh
+
+- name: Create .ssh folder in container
+  community.docker.docker_container_exec:
+    container: datalab-api-1
+    command: mkdir -p /root/.ssh
+
+- name: Copy SSH config into API container
+  community.docker.docker_container_copy_into:
+    container: datalab-api-1
+    path: /home/{{ ansible_ssh_user }}/datalab-ssh/config
+    container_path: /root/.ssh/config
+    mode: 0700
+
+- name: Copy SSH public key into API container
+  community.docker.docker_container_copy_into:
+    container: datalab-api-1
+    path: /home/{{ ansible_ssh_user }}/datalab-ssh/id_ed25519.pub
+    container_path: /root/.ssh/id_ed25519.pub
+    mode: 0700
+
+- name: Copy SSH private key into API container
+  community.docker.docker_container_copy_into:
+    container: datalab-api-1
+    path: /home/{{ ansible_ssh_user }}/datalab-ssh/id_ed25519
+    container_path: /root/.ssh/id_ed25519
+    mode: 0700
+
 - name: Build and launch app container
   community.docker.docker_compose_v2:
     project_src: /home/{{ ansible_ssh_user }}/datalab
