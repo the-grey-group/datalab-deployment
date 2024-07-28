@@ -10,11 +10,13 @@
       tags: [setup]
     - role: datalab
       tags: [deploy]
+    - role: borg
+      tags: [borg, setup]
     - role: nginx
-      tags: [setup, maintenance]
+      tags: [nginx, deploy, setup]
 
   tasks:
     - name: Keep all packages up-to-date
       ansible.builtin.include_role:
         name: apt_upgrade
-      tags: [setup, maintenance]
+      tags: [maintenance]
