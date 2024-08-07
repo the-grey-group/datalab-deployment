@@ -71,4 +71,4 @@
       hour: "2"
       minute: "{{ range(0, 59) | random(seed=inventory_hostname) }}"
       user: "{{ ansible_user }}"
-      job: "borgmatic -c /etc/borgmatic/config.yaml"
+      job: "source /home/{{ ansible_user }}/.profile && borgmatic -c /etc/borgmatic/config.yaml"
