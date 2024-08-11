@@ -13,8 +13,9 @@
 
   - name: Install borgmatic with pipx
     community.general.pipx:
-      name: borgmatic
+      name: 'borgmatic ~= 1.8, < 2'
       state: present
+
 
   - name: Install MongoDB tools
     become: true
@@ -50,7 +51,6 @@
         mongodb_databases:
           - name: all 
             port: 27017
-            options: "--ssl"
       borgmatic_timer: cron
       borg_retention_policy:
         keep_daily: 30
