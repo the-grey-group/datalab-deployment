@@ -180,4 +180,3 @@ hooks:
     {{ hook }}:
         {{ borgmatic_hooks[hook] | to_nice_yaml(indent=2) | trim | indent(8) }}
 {% endfor %}
-
