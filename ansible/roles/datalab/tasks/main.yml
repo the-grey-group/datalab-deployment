@@ -45,23 +45,24 @@
     dest: /home/{{ ansible_ssh_user }}/.ssh
     mode: "0700"
 
+- name: List all SSH config files & keys
+  ansible.builtin.find:
+    paths: /home/{{ ansible_ssh_user }}/.ssh/
+    patterns: "*"
+  register: ssh_files_glob
+
 - name: Create .ssh folder in container
   community.docker.docker_container_exec:
     container: datalab-api-1
     command: mkdir -p /root/.ssh
 
-- name: Copy SSH config and credentials
+- name: Copy SSH config and credentials into container
   community.docker.docker_container_copy_into:
     container: datalab-api-1
-    path: /home/{{ ansible_ssh_user }}/.ssh/{{ item }}
-    container_path: /root/.ssh/{{ item }}
+    path: "{{ item.path }}"
+    container_path: /root/.ssh/{{ item.path | basename }}
     mode: "0700"
-  loop:
-    - config
-    - id_ed25519
-    - id_ed25519.pub
-    - id_ed25519_bot
-    - id_ed25519_bot.pub
+  loop: "{{ ssh_files_glob.files }}"
 
 - name: Build and launch app container
   community.docker.docker_compose_v2:
