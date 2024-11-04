@@ -23,8 +23,9 @@ Attempts will be made to tabulate the supported versions of datalab with each re
 
 | This repository version | *datalab* version |
 |---|---|
-| v0.1.x | v0.4.x |
-
+| v0.1.x | v0.4.x  |
+| v0.2.x | v0.4.x  |
+| v0.3.x | v0.5.x+ |
 
 
 ## Overview
@@ -63,6 +64,8 @@ repository state (i.e., no uncommited changes) to ensure reproducibility.
 
 ### Ansible automation
 
+#### First-time setup
+
 These instructions assume you have prepared the server on which you would like
 to deploy *datalab*, and that it is:
 
@@ -99,7 +102,7 @@ ungrouped:
       api_url: <desired_datalab_api_url>
       app_url: <desired_datalab_app_url>
       # Additional optional settings:
-      mount_data_disk: <disk device file location, e.g., /dev/sda, /dev/sdb or otherwise>
+      mount_data_disk: <disk device file location, e.g., /dev/sda, /dev/sdb or otherwise or a full fstab configuration, e.g., `UUID=aaaa-bbbb-ccc>
       data_disk_type: <the fstype of the data disk, defaults to 'xfs'
       borg_encryption_passphrase: <the passphrase for the borg encryption>
       borg_remote_path: <the command to run borg on the repository (e.g., borg1 vs borg2)>
@@ -119,18 +122,19 @@ These files contain the desired *datalab* settings:
    file (e.g., keys to external integration with GitHub, ORCID).
 3. `./vaults/datalab/.env`: any variables required by the web app.
 4. `./vaults/datalab/.ssh` (OPTIONAL): any SSH keys and config required to be mounted into the server container. These files should each be individually encrypted.
+5. `./vaults/borg/.ssh` (OPTIONAL): any SSH keys or known hosts required to configure the borg backup system. These files should be individually encrypted.
 
 It is recommended that you version control these files **with encryption** and commit it to your
 fork.
 To encrypt them, you can run
 
 ```shell
-ansible-vault encrypt inventory.yml vaults/datalab/prod_config.json vaults/datalab/.env vaults/datalab/.env_server vaults/datalab/.ssh/*
+ansible-vault encrypt inventory.yml vaults/datalab/prod_config.json vaults/datalab/.env vaults/datalab/.env_server vaults/datalab/.ssh/* vaults/borg/.ssh/*
 ```
 
 and provide a password when prompted (which will then need to be kept safe and
-used every time the Ansible playbook is run). Omit the final SSH wildcard if no
-SSH keyse are required.
+used every time the Ansible playbook is run). Omit the optional SSH wildcards if no
+SSH keys are required.
 You should never commit these files directly without encryption.
 
 Once all these configuration steps have been performed, we can try to execute
@@ -148,6 +152,35 @@ If completed successfully, the server should now be running a *datalab*
 instance at your configured URL!
 
 If you are using your own domain, you will need to update your DNS settings so that your domain name points to the IP of the server as given in your inventory file.
+
+#### Keeping things up to date
+
+To update the *datalab* version, you simply update the git submodule in
+`src/datalab`. This can be pinned to your fork and accomodate any custom changes
+you desire (though you may also need to test and maintain your own set of
+ansible rules and configuration for this).
+
+Once you have chosen the *datalab* version, it can be redployed with `make
+deploy` or
+
+```shell
+ansible-playbook --ask-vault-pass -i inventory.yml playbook.yml --tags deploy
+```
+
+To update the ansible playbooks themselves with any changes from the upstream
+repository, you can similarly maintain the submodule in
+`src/datalab-ansible-terraform` and either manually sync changes across, or use
+the helper script:
+
+```shell
+./sync-ansible-upstream.sh
+```
+
+which will copy just the changed playbooks across, and commit them. You should
+be careful to review these changes before committing them to your fork,
+especially if you have made any custom changes to the playbooks.
+Be sure to also commit the changes to your submodule so you know precisely which versions
+of the playbooks are running.
 
 ### Cloud provisioning
 

@@ -1,7 +1,13 @@
 ---
 - name: Create and maintain a datalab
   hosts: all
+  vars:
+    # root behaves differently than other users; set home dir accordingly
+    ansible_user_home_dir: "{{ '/' + ansible_ssh_user if ansible_ssh_user == 'root' else '/home/' + ansible_ssh_user }}"
   roles:
+    - role: preflight
+      name: Check if the system is ready for the playbook
+      tags: [setup]
     - role: setup
       name: Run OS and disk set up tasks
       tags: [setup]
@@ -16,13 +22,13 @@
       tags: [setup, ssl]
     - role: datalab
       name: Build and launch datalab services
-      tags: [deploy]
+      tags: [setup, deploy]
     - role: nginx
       name: Launch nginx container with autorenewing certbot
       tags: [setup, maintenance, ssl]
     - role: borg
       name: Configure borg(matic) and remote backups
-      tags: [borg, setup]
+      tags: [borg]
 
   tasks:
     - name: Keep all packages up-to-date
