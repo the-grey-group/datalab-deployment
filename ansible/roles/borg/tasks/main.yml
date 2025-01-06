@@ -15,8 +15,8 @@
     ssh_config_defined: "{{ ssh_config.stat.exists }}"
 
 - name: Sync local ssh config vault remote
-  become: true
   when: ssh_config_defined
+  become: true
   ansible.builtin.copy:
     src: "{{ playbook_dir }}/vaults/borg/.ssh/"
     dest: "{{ ansible_user_home_dir }}/borgmatic/.ssh"
