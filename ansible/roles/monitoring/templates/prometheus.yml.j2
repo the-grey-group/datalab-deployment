@@ -3,7 +3,7 @@ global:
   scrape_timeout: 45s
 
   external_labels:
-    instance: {{ datalab_prefix | default(app_url) }}
+    instance: {{ app_url }}
     environment: production
     app: datalab
     datalab: {{ datalab_prefix | default(app_url) }}
