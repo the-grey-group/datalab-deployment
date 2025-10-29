@@ -15,7 +15,7 @@ server {
   listen 443 ssl;
   include nginx_ssl.conf;
 
-  client_max_body_size 500M;
+  client_max_body_size 2000M;
 
   # set the correct host(s) for your site
   server_name {{ app_url }};
