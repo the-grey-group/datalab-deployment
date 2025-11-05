@@ -1,7 +1,7 @@
 # Makefile that passes the CLI args to ansible for the given playbook tags
 BW_AVAILABLE = $(shell command -v bw 2> /dev/null)
 VAULT_PASS_ARGS = $(if $(BW_AVAILABLE),--vault-password-file ./.vault-pass.sh, --ask-vault-pass)
-PLAYBOOK_CMD = uv run ansible-playbook -vvv $(VAULT_PASS_ARGS) -i ansible/inventory.yml ansible/playbook.yml
+PLAYBOOK_CMD = uv run ansible-playbook $(VAULT_PASS_ARGS) -i ansible/inventory.yml ansible/playbook.yml
 VAULT_FILES := $(shell find ansible/vaults/ -type f);
 
 # Extract tags directly from YAML (faster but less accurate)
