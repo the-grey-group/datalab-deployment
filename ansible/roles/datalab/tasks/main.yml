@@ -19,7 +19,25 @@
     dest: "{{ ansible_user_home_dir }}/datalab/pydatalab"
     recursive: true
     delete: true
-  failed_when: false
+
+- name: Check for plugins.toml
+  ansible.builtin.stat:
+    path: "{{ playbook_dir }}/../src/plugins.toml"
+  register: plugins_toml
+  delegate_to: localhost
+
+- name: Sync plugins.toml to datalab repo root (consumed by API image build)
+  when: plugins_toml.stat.exists
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../src/plugins.toml"
+    dest: "{{ ansible_user_home_dir }}/datalab/plugins.toml"
+    mode: "0644"
+
+- name: Remove stale plugins.toml from remote
+  when: not plugins_toml.stat.exists
+  ansible.builtin.file:
+    path: "{{ ansible_user_home_dir }}/datalab/plugins.toml"
+    state: absent
 
 - name: Check for custom public folder
   ansible.builtin.stat:
@@ -85,6 +103,8 @@
     profiles: prod
     services: database
     build: always
+    wait: true
+    wait_timeout: 300
 
 - name: Build and launch API container
   community.docker.docker_compose_v2:
@@ -92,6 +112,8 @@
     profiles: prod
     services: api
     build: always
+    wait: true
+    wait_timeout: 300
     env_files:
       - "{{ ansible_user_home_dir }}/datalab/pydatalab/.env"
       - "{{ ansible_user_home_dir }}/datalab/.env_version"
@@ -102,32 +124,28 @@
   register: ssh_config
   delegate_to: localhost
 
-- name: Set fact for whether ssh config exists
-  ansible.builtin.set_fact:
-    ssh_config_defined: "{{ ssh_config.stat.exists }}"
-
 - name: Sync local ssh config vault remote
-  when: ssh_config_defined
+  when: ssh_config.stat.exists
   ansible.builtin.copy:
     src: "{{ playbook_dir }}/vaults/datalab/.ssh/"
     dest: "{{ ansible_user_home_dir }}/.ssh"
     mode: "0700"
 
 - name: List all SSH config files & keys
-  when: ssh_config_defined
+  when: ssh_config.stat.exists
   ansible.builtin.find:
     paths: "{{ ansible_user_home_dir }}/.ssh/"
     patterns: "*"
   register: ssh_files_glob
 
 - name: Create .ssh folder in container
-  when: ssh_config_defined
+  when: ssh_config.stat.exists
   community.docker.docker_container_exec:
     container: datalab-api-1
     command: mkdir -p /root/.ssh
 
 - name: Copy SSH config and credentials into container
-  when: ssh_config_defined
+  when: ssh_config.stat.exists
   community.docker.docker_container_copy_into:
     container: datalab-api-1
     path: "{{ item.path }}"
@@ -140,6 +158,8 @@
     profiles: prod
     services: app
     build: always
+    wait: true
+    wait_timeout: 300
     env_files:
       - "{{ ansible_user_home_dir }}/datalab/webapp/.env"
       - "{{ ansible_user_home_dir }}/datalab/.env_version"
