@@ -453,6 +453,97 @@ and then running the playbook with the `monitoring` tag:
 make monitoring
 ```
 
+#### ChemInventory syncing
+
+Items from a [ChemInventory](https://www.cheminventory.net/) inventory can be
+periodically synced into *datalab* using the
+[datalab-cheminventory-plugin](https://github.com/datalab-industries/datalab-cheminventory-plugin).
+This is enabled by adding the following variables to your inventory:
+
+```yaml
+cheminventory_inventory_id: <your_cheminventory_inventory_id>
+cheminventory_api_key: <your_cheminventory_api_key>
+cheminventory_datalab_api_key: <a_datalab_api_key_for_the_sync>
+cheminventory_cron_frequency: "44 * * * *"  # (optional) defaults to daily at 6:11am
+```
+
+The inventory ID is the numeric ID of the ChemInventory inventory to sync.
+To find it, run the plugin's `status` command with your ChemInventory API key
+(see the ChemInventory [API authentication docs](https://www.cheminventory.net/support/api/#apiauthentication)
+for how to create one); no *datalab* connection is needed:
+
+```shell
+docker run --rm -e CHEMINVENTORY_API_KEY=<your_cheminventory_api_key> \
+  ghcr.io/datalab-industries/datalab-cheminventory-plugin:latest \
+  uv run datalab-cheminventory-sync status
+```
+
+This lists the key's default inventory and any other inventories it can
+access, each with its ID in brackets, e.g., `Default inventory: My Lab (12345)`.
+
+The sync targets the host's `api_url` by default (override with
+`cheminventory_datalab_api_url`), and the plugin version can be set with
+`cheminventory_image_version`.
+The API keys are written to an env file readable only by the docker user,
+rather than into the crontab, and the output of the latest sync is written to
+`~/last_cheminventory_sync.txt`.
+Then run the playbook with the `cheminventory` tag:
+
+```shell
+make cheminventory
+```
+
+#### Emails for failed cron jobs
+
+The playbook schedules several cron jobs as the docker user (certificate
+renewal, weekly snapshots, borg backups and ChemInventory syncing).
+Each writes its output to `~/last_<job>.txt`, and only prints it if the job
+fails, in which case cron emails it to the `MAILTO` address.
+This can be enabled by adding the following variables to your inventory, e.g.,
+for [Resend](https://resend.com/docs/send-with-smtp):
+
+```yaml
+cron_mailto: <the address to email failed cron jobs to>
+cron_mail_from: <the sender address, on a domain verified with the SMTP provider>
+cron_smtp_host: smtp.resend.com
+cron_smtp_user: resend
+cron_smtp_password: <your Resend API key>
+cron_smtp_port: 587  # (optional) the default; STARTTLS, or implicit TLS for port 465
+```
+
+All of these (except `cron_smtp_port`) must be set together; setting only some
+of them fails the playbook run.
+Then run the playbook with the `cron_email` tag:
+
+```shell
+make cron_email
+```
+
+This installs [msmtp](https://marlam.de/msmtp/) as the system `sendmail` on Debian/Ubuntu,
+configures it for the docker user, and sets `MAILTO` in their crontab.
+A test email is sent whenever the SMTP settings or addresses change.
+If the host already runs a mail server (e.g., postfix), or the system is not
+managed by the playbook (`manage_system: false`), msmtp is not installed, and
+the existing `sendmail` is used instead.
+
+##### Alerting with PagerDuty (or similar)
+
+Failures can also raise incidents in an alerting service that accepts inbound
+email, such as [PagerDuty](https://support.pagerduty.com/main/docs/email-integration-guide).
+Add an **Email** integration to a PagerDuty service, and add its address to
+`cron_mailto` (multiple addresses can be comma-separated), e.g.,
+
+```yaml
+cron_mailto: "team@example.com,datalab-cron@yourorg.pagerduty.com"
+```
+
+The cron email subject names the host and job, so configure the integration to
+open a new incident only if one is not already open for the same subject, to
+avoid a new incident for each repeated failure.
+Note that incidents are not resolved automatically when a job next succeeds,
+and that the test email sent when the settings change will also raise an
+incident.
+
 #### Running additional containers
 
 It is often the case that users wish to run additional services alongside *datalab* on the same server.
