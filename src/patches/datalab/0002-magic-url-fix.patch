@@ -1,0 +1,21 @@
+--- a/pydatalab/src/pydatalab/routes/v0_1/auth.py	2026-11-25 09:06:54.666675135 +0000
++++ b/pydatalab/src/pydatalab/routes/v0_1/auth.py	2026-11-25 09:41:06.136878169 +0000
+@@ -885,2 +885,18 @@
+     _validate_magic_link_request(email, referrer)
++
++    # HOTFIX: never build the emailed link from the client-supplied referrer, and
++    # log any request whose referrer does not match, as a possible exploit attempt
++    if not CONFIG.APP_URL:
++        raise Forbidden("Magic-link login is unavailable: APP_URL is not configured.")
++    from urllib.parse import urlsplit as _urlsplit
++
++    if _urlsplit(str(referrer)).netloc.lower() != _urlsplit(CONFIG.APP_URL).netloc.lower():
++        LOGGER.warning(
++            "SECURITY: magic-link request for %s with foreign referrer %r from %s (UA %r)",
++            email,
++            referrer,
++            request.headers.get("X-Forwarded-For", request.remote_addr),
++            request.headers.get("User-Agent"),
++        )
++    referrer = CONFIG.APP_URL.rstrip("/")
+     _check_user_registration_allowed(email)

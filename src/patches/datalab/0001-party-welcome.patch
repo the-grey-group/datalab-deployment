@@ -27152,13 +27152,12 @@ literal 0
 HcmV?d00001
 
 diff --git a/webapp/src/App.vue b/webapp/src/App.vue
-index fda6830d..5ed6f291 100644
+index 34e708ee..ff742140 100644
 --- a/webapp/src/App.vue
 +++ b/webapp/src/App.vue
-@@ -1,10 +1,13 @@
-+<!-- This file was edited with the assistance of an AI model and requires human review from the contributor. -->
- <template>
-   <router-view />
+@@ -7,10 +7,12 @@
+     </keep-alive>
+   </router-view>
    <DialogContainer />
 +  <PartyWelcome />
  </template>
@@ -27169,7 +27168,7 @@ index fda6830d..5ed6f291 100644
  import {
    getApiConfig,
    loadItemSchemas,
-@@ -15,6 +18,7 @@ import {
+@@ -21,6 +23,7 @@ import {
  export default {
    components: {
      DialogContainer,
@@ -27177,6 +27176,7 @@ index fda6830d..5ed6f291 100644
    },
    async created() {
      await this.$router.isReady();
+
 diff --git a/webapp/src/components/PartyWelcome.vue b/webapp/src/components/PartyWelcome.vue
 new file mode 100644
 index 00000000..89ef0442
